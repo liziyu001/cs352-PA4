@@ -11,6 +11,7 @@
 #include "Passes.h"
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/Support/Casting.h>
 #include <map>
 #include <vector>
 #include <set>
@@ -22,10 +23,11 @@ class Liveness : public FunctionPass
 private:
     // IN[BB] and OUT[BB]
     std::map<BasicBlock *, std::set<StringRef>> bb2In, bb2Out;
+    std::map<BasicBlock *, std::set<StringRef>> use, def;
     std::set<StringRef> named;
     public:
     static char ID;
-    Liveness() : FunctionPass(ID), bb2In(), bb2Out(), named() 
+    Liveness() : FunctionPass(ID), bb2In(), bb2Out(), named(), use(), def() 
     {
         initializeLivenessPass(*PassRegistry::getPassRegistry());
     }
@@ -46,6 +48,8 @@ private:
      * @return
      */
     bool isDead(Instruction &inst);
+
+    void postOrderDFS(llvm::BasicBlock *BB, std::set<llvm::BasicBlock *> &visited, std::vector<llvm::BasicBlock *> &postOrder);
 };
 }
 
