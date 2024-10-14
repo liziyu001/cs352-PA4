@@ -37,6 +37,8 @@ private:
     {
         bb2In.clear();
         bb2Out.clear();
+        use.clear();
+        def.clear();
         named.clear();
     }
 

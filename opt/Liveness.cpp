@@ -140,15 +140,15 @@ bool Liveness::isDead(llvm::Instruction &inst)
         return true;
     }
         
-    // if (!bb2Out.count(bb)) {
-    //     return true;
-    // }
+    if (!bb2Out.count(bb)) {
+        return true;
+    }
 
     if (inst.getOpcode() != Instruction::Store) {
         return false;
     }
 
-    auto *storeInst = dyn_cast_or_null<LoadInst>(&inst);
+    auto *storeInst = dyn_cast_or_null<StoreInst>(&inst);
     if (!named.count(storeInst->getPointerOperand()->getName())) {
         return false;
     }
@@ -172,7 +172,7 @@ bool Liveness::isDead(llvm::Instruction &inst)
             }
         }
     }
-    if (liveWithinBB.count(storeInst->getPointerOperand()->getName())) {
+    if (!liveWithinBB.count(storeInst->getPointerOperand()->getName())) {
         return true;
     }
     return false;

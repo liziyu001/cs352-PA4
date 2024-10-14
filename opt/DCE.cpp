@@ -57,14 +57,54 @@ void DeadCodeElimination::findDeadDefinitions(llvm::Instruction *inst,
 
 bool DeadCodeElimination::runOnFunction(llvm::Function &F) 
 {
+    bool retVal = false;
     if (F.empty())
         return false;
 
     Liveness &lv = getAnalysisID<Liveness>(&Liveness::ID);
 
-    // PA4
-    // Step #1: get a set of dead instructions and remove them.
+    bool changed = true;
+
+    while (changed) {
+        changed = false;
+        // Step #1: get a set of dead instructions and remove them.
+        std::set<Instruction *> dead;
+        for (BasicBlock &BB : F) {
+            for (Instruction &I : BB) {
+                if (I.getOpcode() == Instruction::Store) {
+                    if (lv.isDead(I)) {
+                        dead.insert(&I);
+                        findDeadDefinitions(&I, dead);
+                    }
+                }
+            }
+        }
+
+        if (!dead.empty()) {
+            for (Instruction *inst : dead) {
+                if (!inst->use_empty()) {
+                    inst->replaceAllUsesWith(UndefValue::getNullValue(inst->getType()));
+                }
+                inst->eraseFromParent();
+                retVal = true;
+            }
+            lv.releaseMemory();
+            lv.runOnFunction(F);
+            changed = true;
+        }
+    }
+
+    for (BasicBlock &BB : F) {
+        for (auto it = BB.begin(); it != BB.end();) {
+            Instruction *inst = &*it++;
+            if (inst->getOpcode() == Instruction::Alloca && inst->use_empty()) {
+                inst->eraseFromParent();
+                retVal = true;
+            }
+        }
+    }
+    
     
     // Step #2: remove the Alloca instructions having no uses.
-    return false;
+    return retVal;
 }
